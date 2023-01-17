@@ -87,7 +87,7 @@ pip install -r requirements.txt
 - Run the bot by executing the following command:
 
 ```bash
-python launcher.py
+py launcher.py
 ```
 
 ## Contributing
