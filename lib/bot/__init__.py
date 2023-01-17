@@ -32,6 +32,53 @@ def run():
     client.run(TOKEN)
 
 
+async def server_autocompletion(
+        interaction: discord.Interaction,
+        current: str
+) -> List[app_commands.Choice[int]]:
+    nitrado_servers = db.records(
+        "SELECT nitrado_server_id, nitrado_server_name FROM nitrado_servers WHERE server_id = ?",
+        interaction.guild.id)
+    choices = []
+    for server in nitrado_servers:
+        if current.lower() in server[1].lower():
+            choices.append(app_commands.Choice(name=server[1], value=server[1]))
+    return choices
+
+
+async def get_server_info(interaction: discord.Interaction, input_server_name: str):
+    nitrado_servers = db.records(
+        "SELECT nitrado_server_id, nitrado_server_name FROM nitrado_servers WHERE server_id = ?", interaction.guild.id)
+    nitrado_server_id = None
+    nitrado_server_name = None
+    for server in nitrado_servers:
+        if input_server_name.lower() == server[1].lower():
+            nitrado_server_id = server[0]
+            nitrado_server_name = server[1]
+            break
+    if nitrado_server_id is None:
+        embed = discord.Embed(title="Server not found",
+                              description="No server found with this name. Please check the name and try again.",
+                              color=0xff0000)
+        await interaction.response.edit_message(embed=embed, ephemeral=True)
+        return
+
+    # retrieve the encrypted key and ciphertext from the database
+    encrypted_key = db.field("SELECT encrypted_key FROM nitrado_servers WHERE nitrado_server_id = ?", nitrado_server_id)
+
+    # decrypt the key using KMS
+    key = kms.decrypt(CiphertextBlob=encrypted_key, KeyId=KMS_KEY, EncryptionAlgorithm='RSAES_OAEP_SHA_256')[
+        'Plaintext']
+    cipher = Fernet(key)
+    # retrieve the ciphertext
+    ciphertext = db.field("SELECT ciphertext FROM nitrado_servers WHERE nitrado_server_id = ?", nitrado_server_id)
+    bearer_token = cipher.decrypt(ciphertext).decode()
+    headers = {
+        'Authorization': 'Bearer ' + bearer_token,
+    }
+    return nitrado_server_id, nitrado_server_name, headers
+
+
 @client.event
 async def on_guild_join(guild):
     embed = discord.Embed(title="Dodocord",
@@ -81,6 +128,29 @@ async def add_gameserver(interaction: discord.Interaction, nitrado_server_id: in
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
+@commands.has_permissions(administrator=True)
+@client.tree.command(name="remove_gameserver", description="Remove a Nitrado game server from the server list.")
+@app_commands.autocomplete(item=server_autocompletion)
+async def remove_gameserver(interaction: discord.Interaction, item: str):
+    nitrado_servers = db.records(
+        "SELECT nitrado_server_id, nitrado_server_name FROM nitrado_servers WHERE server_id = ?", interaction.guild.id)
+    nitrado_server_id = None
+    for server in nitrado_servers:
+        if item.lower() == server[1].lower():
+            nitrado_server_id = server[0]
+            break
+    if nitrado_server_id is None:
+        embed = discord.Embed(title="Server not found",
+                              description="No server found with this name. Please check the name and try again.",
+                              color=0xff0000)
+        await interaction.response.edit_message(embed=embed, ephemeral=True)
+        return
+    db.execute("DELETE FROM nitrado_servers WHERE nitrado_server_id = ?", nitrado_server_id)
+    db.commit()
+    embed = discord.Embed(title="Server removed from the list", color=discord.Color.green())
+    await interaction.response.send_message(embed=embed, ephemeral=True)
+
+
 @client.tree.command(name="list_gameservers", description="List all Nitrado game servers on the server.")
 async def list_gameservers(interaction: discord.Interaction):
     nitrado_servers = db.records(
@@ -93,20 +163,6 @@ async def list_gameservers(interaction: discord.Interaction):
     else:
         embed = discord.Embed(title="No Nitrado game servers found on this server.", color=discord.Color.red())
         await interaction.response.send_message(embed=embed, ephemeral=True)
-
-
-async def server_autocompletion(
-        interaction: discord.Interaction,
-        current: str
-) -> List[app_commands.Choice[int]]:
-    nitrado_servers = db.records(
-        "SELECT nitrado_server_id, nitrado_server_name FROM nitrado_servers WHERE server_id = ?",
-        interaction.guild.id)
-    choices = []
-    for server in nitrado_servers:
-        if current.lower() in server[1].lower():
-            choices.append(app_commands.Choice(name=server[1], value=server[1]))
-    return choices
 
 
 @client.tree.command(name="gameserver_status", description="Get the status of a Nitrado game server.")
@@ -232,36 +288,12 @@ async def players_online(interaction: discord.Interaction, item: str):
         await interaction.edit_original_response(embed=embed)
 
 
-async def get_server_info(interaction: discord.Interaction, input_server_name: str):
-    nitrado_servers = db.records(
-        "SELECT nitrado_server_id, nitrado_server_name FROM nitrado_servers WHERE server_id = ?", interaction.guild.id)
-    nitrado_server_id = None
-    nitrado_server_name = None
-    for server in nitrado_servers:
-        if input_server_name.lower() == server[1].lower():
-            nitrado_server_id = server[0]
-            nitrado_server_name = server[1]
-            break
-    if nitrado_server_id is None:
-        embed = discord.Embed(title="Server not found",
-                              description="No server found with this name. Please check the name and try again.",
-                              color=0xff0000)
-        await interaction.response.edit_message(embed=embed, ephemeral=True)
-        return
-
-    # retrieve the encrypted key and ciphertext from the database
-    encrypted_key = db.field("SELECT encrypted_key FROM nitrado_servers WHERE nitrado_server_id = ?", nitrado_server_id)
-
-    # decrypt the key using KMS
-    key = kms.decrypt(CiphertextBlob=encrypted_key, KeyId=KMS_KEY, EncryptionAlgorithm='RSAES_OAEP_SHA_256')['Plaintext']
-    cipher = Fernet(key)
-    # retrieve the ciphertext
-    ciphertext = db.field("SELECT ciphertext FROM nitrado_servers WHERE nitrado_server_id = ?", nitrado_server_id)
-    bearer_token = cipher.decrypt(ciphertext).decode()
-    headers = {
-        'Authorization': 'Bearer ' + bearer_token,
-    }
-    return nitrado_server_id, nitrado_server_name, headers
+@client.tree.command(name="help", description="List of available commands")
+async def help(interaction: discord.Interaction):
+    embed = discord.Embed(title="List of available commands", color=0x00ff00)
+    for command in client.tree.get_commands(guild=discord.Object(id=constants.GUILD_ID)):
+        embed.add_field(name=f"/{command.name}", value=command.description, inline=False)
+    await interaction.response.send_message(embed=embed)
 
 
 @client.event
