@@ -2,7 +2,7 @@
 
 Dodocord is a bot designed to manage Ark game servers hosted by Nitrado. It allows you to easily control your game servers and retrieve information about them directly from your discord server.
 
-##Setting up your own token
+## Setting up your own token
 
 In order to use your own token, you need to set up an environment variable named TOKEN with your bot token.
 ## Available commands
