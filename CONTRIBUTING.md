@@ -16,7 +16,7 @@ We expect all contributors to adhere to the [Code of Conduct](./CODE_OF_CONDUCT.
 
 ## Issues
 
-Before submitting a new issue, please check the [issue tracker](./issues) to see if a similar issue has already been reported. If so, please add any additional information to the existing issue.
+Before submitting a new issue, please check the [issue tracker](https://github.com/Yanow0/DodocordV2/issues) to see if a similar issue has already been reported. If so, please add any additional information to the existing issue.
 
 When submitting a new issue, please include as much information as possible, including the version of the software you are using, the steps to reproduce the issue, and any relevant error messages.
 
