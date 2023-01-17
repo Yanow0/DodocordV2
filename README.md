@@ -1,8 +1,11 @@
 # Dodocord
 
 Welcome to Dodocord, a bot designed to manage Ark game servers hosted by Nitrado. It allows you to easily control your game servers and retrieve information about them directly from your discord server.
+
 Dodocord is a multi-server bot, which means it can be used on multiple discord servers simultaneously.
+
 This project is open source, which means that the code is available for anyone to use, modify, and contribute to. For users who only want to use the bot, it can be invited to your server by clicking the invite button.
+
 If you're interested in contributing to the development of Dodocord, please read the CONTRIBUTING.md for information on how to do so.
 
 **IMPORTANT:** If you are only here to use the bot, you don't need to read the setup part, you only have to invite the bot to your server by clicking the invite button.
