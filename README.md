@@ -22,17 +22,28 @@ You should replace your_bot_token, your_aws_key, your_aws_secret, and your_kms_k
 
 ## Available commands
 
-    /help: Get a list of available commands.
-    /gameserver_start: Start a Nitrado game server.
-    /gameserver_stop: Stop a Nitrado game server.
-    /gameserver_restart: Restart a Nitrado game server.
-    /gameserver_status: Get the status of a Nitrado game server.
-    /gameserver_info: Get information of a Nitrado game server.
-    /list_gameservers: List all Nitrado game servers on the server.
-    /add_gameserver: Add a Nitrado game server to the server list.
-    /remove_gameserver: Remove a Nitrado game server from the server list.
+- **/help**: This command allows users to view a list of available commands and their descriptions.
+
+- **/gameserver_start**: This command allows users with administrator permissions to start a Nitrado game server. It requires the Nitrado server ID and a bearer token for authentication.
+
+- **/gameserver_stop**: This command allows users with administrator permissions to stop a Nitrado game server. It requires the Nitrado server ID and a bearer token for authentication.
+
+- **/gameserver_restart**: This command allows users with administrator permissions to restart a Nitrado game server. It requires the Nitrado server ID and a bearer token for authentication.
+
+- **/gameserver_status**: This command allows users to check the status of a Nitrado game server. It requires the Nitrado server ID and a bearer token for authentication.
+
+- **/gameserver_info**: This command allows users to retrieve information about a Nitrado game server such as the server name, ID, and current players. It requires the Nitrado server ID and a bearer token for authentication.
+
+- **/list_gameservers**: This command allows users to view a list of all Nitrado game servers on the server.
+
+- **/add_gameserver**: This command allows users with administrator permissions to add a Nitrado game server to the server list. It requires the Nitrado server ID, a bearer token for authentication, and a name for the server.
+
+- **/remove_gameserver**: This command allows users with administrator permissions to remove a Nitrado game server from the server list. It requires the Nitrado server ID and a bearer token for authentication.
+
+It's important to note that some commands such as /gameserver_start, /gameserver_stop, /gameserver_restart, /add_gameserver and /remove_gameserver require administrator permissions.
 
 Note: Some commands require administrator permissions.
+
 ## Running the bot
 
 - Make sure you have Python3 installed on your machine.
