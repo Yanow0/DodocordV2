@@ -291,7 +291,7 @@ async def players_online(interaction: discord.Interaction, item: str):
 @client.tree.command(name="help", description="List of available commands")
 async def help(interaction: discord.Interaction):
     embed = discord.Embed(title="List of available commands", color=0x00ff00)
-    for command in client.tree.get_commands(guild=discord.Object(id=constants.GUILD_ID)):
+    for command in client.tree.get_commands():
         embed.add_field(name=f"/{command.name}", value=command.description, inline=False)
     await interaction.response.send_message(embed=embed)
 
