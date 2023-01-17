@@ -92,4 +92,4 @@ python run.py
 
 ## Contributing
 
-If you would like to contribute to the development of Dodocord, please read the CONTRIBUTING.md for information on how to do so.
+If you would like to contribute to the development of Dodocord, please read the [CONTRIBUTING.md](./CONTRIBUTING.md) for information on how to do so.
