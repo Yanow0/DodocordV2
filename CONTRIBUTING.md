@@ -34,5 +34,3 @@ Before submitting a pull request, please make sure to:
 ## Coding Standards
 
 - Follow the PEP 8 style guide for Python code.
-- Follow the [Google Python Style Guide](https://google.github.io/styleguide/pyguide.html) for Python code.
-- Follow the [Discord.py Coding Standards](https://discordpy.readthedocs.io/en/latest/coding_standards.html) for Discord.py code.
