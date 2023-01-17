@@ -1,0 +1,6 @@
+GUILD_ID = 1062398570231255111
+CHANNEL_ID = 1062398572072534119
+DB_PATH = "./data/db/database.db"
+BUILD_PATH = "./data/db/build.sql"
+PREFIX = "/"
+VERSION = "0.0.1"
