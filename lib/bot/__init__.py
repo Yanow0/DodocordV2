@@ -12,14 +12,16 @@ from dotenv import load_dotenv
 import os
 import boto3
 
-kms = boto3.client('kms')
-
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
+AWS_KEY = os.getenv('AWS_KEY')
+AWS_SECRET = os.getenv('AWS_SECRET')
+KMS_KEY = os.getenv('KMS_KEY')
 
 intents = discord.Intents.all()
 intents.members = True
 client = commands.Bot(command_prefix=constants.PREFIX, intents=intents)
+kms = boto3.client('kms', region_name='eu-west-3', aws_access_key_id=AWS_KEY, aws_secret_access_key=AWS_SECRET)
 
 db.init()
 scheduler = AsyncIOScheduler()
@@ -52,6 +54,8 @@ async def on_guild_join(guild):
         db.commit()
 
 
+@commands.has_permissions(administrator=True)
+@client.tree.command(name="add_gameserver", description="Add a Nitrado game server to the server list.")
 async def add_gameserver(interaction: discord.Interaction, nitrado_server_id: int, bearer_token: str,
                          nitrado_server_name: str):
     # check if the server already exists in the list
@@ -60,7 +64,8 @@ async def add_gameserver(interaction: discord.Interaction, nitrado_server_id: in
     if not existing_server:
         key = Fernet.generate_key()  # generate a new key
         # encrypt the key using KMS
-        encrypted_key = kms.encrypt(KeyId='alias/my-kms-key', Plaintext=key)['CiphertextBlob']
+        encrypted_key = kms.encrypt(KeyId=KMS_KEY, Plaintext=key, EncryptionAlgorithm='RSAES_OAEP_SHA_256')[
+            'CiphertextBlob']
         cipher = Fernet(key)
         ciphertext = cipher.encrypt(bearer_token.encode())
         # store the encrypted key and ciphertext in the database
@@ -246,10 +251,12 @@ async def get_server_info(interaction: discord.Interaction, input_server_name: s
 
     # retrieve the encrypted key and ciphertext from the database
     encrypted_key = db.field("SELECT encrypted_key FROM nitrado_servers WHERE nitrado_server_id = ?", nitrado_server_id)
-    ciphertext = db.field("SELECT ciphertext FROM nitrado_servers WHERE nitrado_server_id = ?", nitrado_server_id)
+
     # decrypt the key using KMS
-    key = kms.decrypt(CiphertextBlob=encrypted_key)['Plaintext']
+    key = kms.decrypt(CiphertextBlob=encrypted_key, KeyId=KMS_KEY, EncryptionAlgorithm='RSAES_OAEP_SHA_256')['Plaintext']
     cipher = Fernet(key)
+    # retrieve the ciphertext
+    ciphertext = db.field("SELECT ciphertext FROM nitrado_servers WHERE nitrado_server_id = ?", nitrado_server_id)
     bearer_token = cipher.decrypt(ciphertext).decode()
     headers = {
         'Authorization': 'Bearer ' + bearer_token,
