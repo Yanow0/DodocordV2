@@ -1,3 +1,5 @@
+from cryptography.fernet import Fernet
+
 import constants
 import requests
 import discord
@@ -6,8 +8,11 @@ from discord.ext import commands
 from discord import app_commands
 from typing import List
 from ..db import db
-import os
 from dotenv import load_dotenv
+import os
+import boto3
+
+kms = boto3.client('kms')
 
 load_dotenv()
 TOKEN = os.getenv('TOKEN')
@@ -47,18 +52,22 @@ async def on_guild_join(guild):
         db.commit()
 
 
-@commands.has_permissions(administrator=True)
-@client.tree.command(name="add_gameserver",
-                     description="Add a Nitrado game server to the server list.")
 async def add_gameserver(interaction: discord.Interaction, nitrado_server_id: int, bearer_token: str,
                          nitrado_server_name: str):
-    if not db.record("SELECT nitrado_server_id FROM nitrado_servers WHERE nitrado_server_id = ?",
-                     nitrado_server_id) & db.record("SELECT nitrado_server_name FROM nitrado_servers WHERE "
-                                                    "nitrado_server_id = ?", nitrado_server_name):
+    # check if the server already exists in the list
+    existing_server = db.record("SELECT nitrado_server_id FROM nitrado_servers WHERE nitrado_server_id = ?",
+                                nitrado_server_id)
+    if not existing_server:
+        key = Fernet.generate_key()  # generate a new key
+        # encrypt the key using KMS
+        encrypted_key = kms.encrypt(KeyId='alias/my-kms-key', Plaintext=key)['CiphertextBlob']
+        cipher = Fernet(key)
+        ciphertext = cipher.encrypt(bearer_token.encode())
+        # store the encrypted key and ciphertext in the database
         db.execute(
-            "INSERT INTO nitrado_servers (server_id, bearer_token, nitrado_server_id, nitrado_server_name) VALUES (?,"
-            "?,?,?)",
-            interaction.guild.id, bearer_token, nitrado_server_id, nitrado_server_name)
+            "INSERT INTO nitrado_servers (server_id, encrypted_key, ciphertext, nitrado_server_id, "
+            "nitrado_server_name) VALUES (?,?,?,?,?)",
+            interaction.guild.id, encrypted_key, ciphertext, nitrado_server_id, nitrado_server_name)
         db.commit()
         embed = discord.Embed(title="Server added to the list", color=discord.Color.green())
         await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -234,8 +243,14 @@ async def get_server_info(interaction: discord.Interaction, input_server_name: s
                               color=0xff0000)
         await interaction.response.edit_message(embed=embed, ephemeral=True)
         return
-    bearer_token = db.field("SELECT bearer_token FROM nitrado_servers WHERE nitrado_server_id = ?", nitrado_server_id)
 
+    # retrieve the encrypted key and ciphertext from the database
+    encrypted_key = db.field("SELECT encrypted_key FROM nitrado_servers WHERE nitrado_server_id = ?", nitrado_server_id)
+    ciphertext = db.field("SELECT ciphertext FROM nitrado_servers WHERE nitrado_server_id = ?", nitrado_server_id)
+    # decrypt the key using KMS
+    key = kms.decrypt(CiphertextBlob=encrypted_key)['Plaintext']
+    cipher = Fernet(key)
+    bearer_token = cipher.decrypt(ciphertext).decode()
     headers = {
         'Authorization': 'Bearer ' + bearer_token,
     }
