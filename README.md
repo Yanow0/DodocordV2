@@ -6,6 +6,8 @@ Dodocord is a multi-server bot, which means it can be used on multiple discord s
 
 This project is open source, which means that the code is available for anyone to use, modify, and contribute to. For users who only want to use the bot, it can be invited to your server by clicking the invite button.
 
+[![Invite](https://img.shields.io/badge/Invite-Bot-blue.svg?style=flat-square)](https://discord.com/oauth2/authorize?client_id=1062389421862817892&permissions=8&scope=bot)  
+
 If you're interested in contributing to the development of Dodocord, please read the CONTRIBUTING.md for information on how to do so.
 
 **IMPORTANT:** If you are only here to use the bot, you don't need to read the setup part, you only have to invite the bot to your server by clicking the invite button.
