@@ -79,6 +79,26 @@ async def get_server_info(interaction: discord.Interaction, input_server_name: s
     return nitrado_server_id, nitrado_server_name, headers
 
 
+def get_closest_coord(realm: str, lat: float, long: float) -> str:
+    """Gets the closest coordinate to the given latitude and longitude."""
+    coords = db.records("SELECT * FROM tp_coord WHERE realm = ?", realm)
+
+    closest_coord = None
+    closest_distance = None
+    for coord in coords:
+        distance = get_distance(lat, long, coord[3], coord[4])
+        if closest_distance is None or distance < closest_distance:
+            closest_distance = distance
+            closest_coord = coord[1] + " ➡️ " + coord[2]
+
+    return closest_coord
+
+
+def get_distance(lat1: float, long1: float, lat2: float, long2: float) -> float:
+    """Gets the distance between two coordinates."""
+    return ((lat1 - lat2) ** 2 + (long1 - long2) ** 2) ** 0.5
+
+
 @client.event
 async def on_guild_join(guild):
     embed = discord.Embed(title="Dodocord",
@@ -99,6 +119,23 @@ async def on_guild_join(guild):
         db.execute("INSERT INTO servers (server_id, server_name, owner_id, main_channel_id) VALUES (?,?,?,?)",
                    guild.id, guild.name, guild.owner.id, joinchannel.id)
         db.commit()
+
+
+@app_commands.choices(realm=[
+    app_commands.Choice(name="Vannaland", value="Vannaland"),
+    app_commands.Choice(name="Jotunheim", value="Jotunheim"),
+    app_commands.Choice(name="Balheimr", value="Balheimr"),
+    app_commands.Choice(name="Asgard", value="Asgard"),
+    app_commands.Choice(name="Vanaheim", value="Vanaheim"),
+    app_commands.Choice(name="Vardiland", value="Vardiland"),
+])
+@client.tree.command(name="get_closest_tp", description="Gets the closest teleportation point to your destination")
+async def get_closest_tp(interaction: discord.Interaction, realm: str, latitude: float, longitude: float):
+    closest_coord = get_closest_coord(realm, latitude, longitude)
+    embed = discord.Embed(title="Closest teleportation point",
+                          description=f"The closest teleportation point to your destination is **{closest_coord}**",
+                          color=0x00ff00)
+    await interaction.response.send_message(embed=embed, ephemeral=True)
 
 
 @commands.has_permissions(administrator=True)
